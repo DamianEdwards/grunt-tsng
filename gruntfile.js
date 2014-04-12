@@ -6,22 +6,25 @@
  * Licensed under the Apache 2.0 License.
  */
 
-"use strict";
-
 module.exports = function(grunt) {
-	grunt.initConfig({
-		jshint: {
-			all: [
-				"Gruntfile.js",
-				"tasks/**/*.js"
-			]
-		}
-	});
+    "use strict";
 
-	grunt.loadTasks("tasks");
+    grunt.initConfig({
+        jshint: {
+            all: [
+                "Gruntfile.js",
+                "tasks/**/*.js"
+            ],
+            options: {
+                jshintrc: ".jshintrc"
+            }
+        }
+    });
 
-	grunt.loadNpmTasks("grunt-contrib-jshint");
-	grunt.loadNpmTasks("grunt-contrib-clean");
+    grunt.loadTasks("tasks");
 
-	grunt.registerTask("default", ["jshint"]);
+    grunt.loadNpmTasks("grunt-contrib-jshint");
+    grunt.loadNpmTasks("grunt-contrib-clean");
+
+    grunt.registerTask("default", ["jshint"]);
 };

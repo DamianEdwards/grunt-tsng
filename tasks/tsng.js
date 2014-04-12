@@ -403,6 +403,7 @@ module.exports = function (grunt) {
             var content = grunt.file.read(filepath);
             var lines = content.split("\r\n");
             var module, line, matches, state, lastClosingBraceLine, error;
+            var moduleFile;
             var expect = {
                 anything: 0,
                 moduleDeclaration: 1,
@@ -445,7 +446,7 @@ module.exports = function (grunt) {
                             break;
                         }
 
-                        var moduleFile = parseModuleFile(filepath);
+                        moduleFile = parseModuleFile(filepath);
                         moduleFile.name = matches[1];
                         moduleFile.declarationLine = i;
                         module = moduleFile;
@@ -543,7 +544,7 @@ module.exports = function (grunt) {
                             break;
                         }
 
-                        var moduleFile = parseModuleFile(filepath);
+                        moduleFile = parseModuleFile(filepath);
                         moduleFile.name = state[1] || matches[1];
                         module = moduleFile;
 
@@ -733,8 +734,8 @@ module.exports = function (grunt) {
                 return result;
             }
 
-            if (matches["dependencies"]) {
-                var arrayMembers = matches["dependencies"][1];
+            if (matches.dependencies) {
+                var arrayMembers = matches.dependencies[1];
                 var dependencies = [];
                 if (arrayMembers) {
                     arrayMembers.split(",").forEach(function (dependency) {
@@ -780,11 +781,11 @@ module.exports = function (grunt) {
                 return module;
             }
 
-            if (!module.file
-                && (!fileResult.controllers || !fileResult.controllers.length)
-                && (!fileResult.services || !fileResult.services.length)
-                && (!fileResult.directives || !fileResult.directives.length)
-                && (!fileResult.filters || !fileResult.filters.length)) {
+            if (!module.file &&
+                (!fileResult.controllers || !fileResult.controllers.length) &&
+                (!fileResult.services || !fileResult.services.length) &&
+                (!fileResult.directives || !fileResult.directives.length) &&
+                (!fileResult.filters || !fileResult.filters.length)) {
 
                 //grunt.log.writeln("Module " + module.name + " contains no angular types, skipping file emission");
 
@@ -816,7 +817,7 @@ module.exports = function (grunt) {
             /// <param name="moduleName" type="String" />
             /// <param name="allNames" type="Array" elementType="String" />
 
-            debugger;
+            //debugger;
 
             var prefix, matchedIndex;
             var parts = moduleName.split(".");
@@ -838,7 +839,7 @@ module.exports = function (grunt) {
                     }
                 });
 
-                matchedIndex = allNames.indexOf(prefix + name)
+                matchedIndex = allNames.indexOf(prefix + name);
                 if (matchedIndex >= 0) {
                     return allNames[matchedIndex];
                 }
@@ -854,17 +855,19 @@ module.exports = function (grunt) {
 
             //debugger;
 
+            var result, i, c;
+
             chars = chars || [" "];
 
             if (!target) {
                 return target;
             }
 
-            var result = "";
+            result = "";
 
             // Trim from start
-            for (var i = 0; i < target.length; i++) {
-                var c = target[i];
+            for (i = 0; i < target.length; i++) {
+                c = target[i];
                 if (chars.indexOf(c) < 0) {
                     result = target.substr(i);
                     break;
@@ -872,8 +875,8 @@ module.exports = function (grunt) {
             }
 
             // Trim from end
-            for (var i = result.length - 1; i >= 0; i--) {
-                var c = result[i];
+            for (i = result.length - 1; i >= 0; i--) {
+                c = result[i];
                 if (chars.indexOf(c) < 0) {
                     result = result.substring(0, i + 1);
                     break;
