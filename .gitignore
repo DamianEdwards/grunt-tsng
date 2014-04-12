@@ -1,0 +1,13 @@
+# User-specific files
+*.suo
+*.user
+*.sln.docstates
+
+# Bower Components
+bower_components
+
+# Node Modules
+node_modules
+
+# Public files
+[Pp]ublic
