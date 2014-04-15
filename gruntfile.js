@@ -18,13 +18,20 @@ module.exports = function(grunt) {
             options: {
                 jshintrc: ".jshintrc"
             }
+        },
+        test: {
+            files: {
+                src: "tests"
+            }
         }
     });
 
     grunt.loadTasks("tasks");
+    grunt.loadTasks("tests");
 
     grunt.loadNpmTasks("grunt-contrib-jshint");
     grunt.loadNpmTasks("grunt-contrib-clean");
+    grunt.loadNpmTasks("grunt-typescript");
 
     grunt.registerTask("default", ["jshint"]);
 };
