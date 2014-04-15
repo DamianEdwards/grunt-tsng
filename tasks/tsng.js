@@ -9,7 +9,8 @@
 module.exports = function (grunt) {
     "use strict";
 
-    var path = require('path');
+    var path = require("path");
+    var util = require("util");
 
     grunt.registerMultiTask("tsng", "Generate AngularJS registration blocks based on conventions and annotations in TypeScript files.", function () {
 
@@ -18,11 +19,8 @@ module.exports = function (grunt) {
         // this.files is globbed files array for current target
 
         var options = this.options({
-            extension: ".ng.ts",
-            cwd: "."
+            extension: ".ng.ts"
         });
-
-        options.cwd = path.resolve(options.cwd);
 
         //grunt.log.writeln("Extension path: " + options.extension);
 
@@ -119,6 +117,8 @@ module.exports = function (grunt) {
         }
 
         function processSet(fileSet, options) {
+            grunt.verbose.writeln("processSet->fileSet: " + util.inspect(fileSet));
+
             var result = {
                 modules: [],
                 controllers: [],
@@ -130,9 +130,12 @@ module.exports = function (grunt) {
             var modules = {};
             var files = {};
             var error;
+            var dest = path.resolve(fileSet.dest);
+
+            grunt.verbose.writeln("dest file path: " + dest);
 
             fileSet.src.forEach(function (filepath) {
-                var fileResult = processFile(filepath, options);
+                var fileResult = processFile(filepath, dest, options);
                 fileResult.path = filepath;
 
                 if (fileResult.error) {
@@ -160,31 +163,31 @@ module.exports = function (grunt) {
             }
 
             // Emit module files
-            for (var name in modules) {
-                if (!modules.hasOwnProperty(name)) {
+            for (var moduleName in modules) {
+                if (!modules.hasOwnProperty(moduleName)) {
                     continue;
                 }
                 
-                emitModuleFile(modules[name], options);
+                emitModuleFile(modules[moduleName], dest, options);
 
-                if (!modules[name].file) {
-                    throw new Error("Module " + name + " doesn't have a file");
+                if (!modules[moduleName].file) {
+                    throw new Error("Module " + moduleName + " doesn't have a file");
                 }
             }
 
             // Emit non-module files
-            for (var path in files) {
-                if (!files.hasOwnProperty(path)) {
+            for (var filepath in files) {
+                if (!files.hasOwnProperty(filepath)) {
                     continue;
                 }
 
-                emitFile(files[path], result.services, options);
+                emitFile(files[filepath], result.services, options);
             }
 
             return result;
         }
 
-        function emitModuleFile(module, options) {
+        function emitModuleFile(module, dest, options) {
             var filepath = "";
             var content = "";
             var srcLines;
@@ -230,7 +233,7 @@ module.exports = function (grunt) {
                 });
             } else {
                 // We need to render a whole file
-                filepath = path.join(options.cwd, module.name + options.extension);
+                filepath = path.join(dest, module.name + options.extension);
                 content = "module " + module.name + " {\r\n";
                 content += "    angular.module(\"" + module.name + "\", []);\r\n";
                 content += "}";
@@ -261,11 +264,12 @@ module.exports = function (grunt) {
                 }
 
                 if (i === file.closingBraceLine && module.file) {
-
-                    content += "    angular.module(\"" + module.name + "\")\r\n";
+                    content += "    \r\n";
+                    content += "    angular.module(\"" + module.name + "\")";
 
                     // Register controllers
                     file.controllers.forEach(function (controller) {
+                        content += "\r\n";
                         content += indent(2) + ".controller(\"" + controller.name + "\", [\r\n";
 
                         if (controller.dependencies && controller.dependencies.length) {
@@ -285,11 +289,12 @@ module.exports = function (grunt) {
                         }
 
                         content += "            " + controller.fnName + "\r\n";
-                        content += "        ])\r\n";
+                        content += "        ])";
                     });
 
                     // Register services
                     file.services.forEach(function (service) {
+                        content += "\r\n";
                         content += "       .service(\"" + service.name + "\", [\r\n";
 
                         if (service.dependencies && service.dependencies.length) {
@@ -309,11 +314,12 @@ module.exports = function (grunt) {
                         }
 
                         content += indent(3) + service.fnName + "\r\n";
-                        content += indent(2) + "])\r\n";
+                        content += indent(2) + "])";
                     });
 
                     // Register directives
                     file.directives.forEach(function (directive) {
+                        content += "\r\n";
                         content += "       .directive(\"" + directive.name + "\", [\r\n";
 
                         if (directive.dependencies && directive.dependencies.length) {
@@ -344,24 +350,29 @@ module.exports = function (grunt) {
                         content += ") {\r\n";
                         content += "                return new " + directive.fnName + "(" + argList + ");\r\n";
                         content += "            }\r\n";
-                        content += "        ])\r\n";
+                        content += "        ])";
                     });
 
                     // Register filters
                     file.filters.forEach(function (filter) {
-                        content += "       .filter(\"" + filter.name + "\", () => " + filter.fnName + ")\r\n";
+                        content += "\r\n";
+                        content += "       .filter(\"" + filter.name + "\", () => " + filter.fnName + ")";
                     });
 
-                    content += "    ;\r\n";
+                    content += ";\r\n";
                 }
 
-                content += line + "\r\n";
+                content += line;
 
-                grunt.file.write(filepath, content);
+                if (i < (srcLines.length - 1)) {
+                    content += "\r\n";
+                }
             });
+
+            grunt.file.write(filepath, content);
         }
 
-        function processFile(filepath, options) {
+        function processFile(filepath, dest, options) {
             var result = {
                 module: null,
                 controllers: [],

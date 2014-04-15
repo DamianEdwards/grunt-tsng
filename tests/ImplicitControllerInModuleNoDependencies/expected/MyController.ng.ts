@@ -1,3 +1,5 @@
+/// <reference path="MyApp.Area.ng.ts" />
+
 module MyApp.Area {
     class MyController {
         constructor () {
