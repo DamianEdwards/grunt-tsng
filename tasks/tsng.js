@@ -295,7 +295,7 @@ module.exports = function (grunt) {
                     // Register services
                     file.services.forEach(function (service) {
                         content += "\r\n";
-                        content += "       .service(\"" + service.name + "\", [\r\n";
+                        content += "        .service(\"" + service.name + "\", [\r\n";
 
                         if (service.dependencies && service.dependencies.length) {
                             service.dependencies.forEach(function (d) {
