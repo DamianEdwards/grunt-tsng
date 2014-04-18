@@ -356,7 +356,7 @@ module.exports = function (grunt) {
                     // Register filters
                     file.filters.forEach(function (filter) {
                         content += "\r\n";
-                        content += "       .filter(\"" + filter.name + "\", () => " + filter.fnName + ")";
+                        content += "        .filter(\"" + filter.name + "\", () => " + filter.fnName + ")";
                     });
 
                     content += ";\r\n";
