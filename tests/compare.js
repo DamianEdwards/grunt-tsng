@@ -14,13 +14,14 @@ module.exports = function (grunt) {
     var util = require("util");
 
     grunt.registerMultiTask("compare", "Compares two directories", function () {
-        grunt.verbose.writeln("Compare this.files: " + util.inspect(this.files));
-
         grunt.log.writeln("Comparing directories:");
+        grunt.log.writeln(util.inspect(this.files.map(function (el) { return el.src[0]; })));
+
+        grunt.verbose.writeln("Compare this.files: " + util.inspect(this.files));
 
         var results = [];
 
-        this.files.forEach(function (fileset) {
+        this.files.every(function (fileset) {
             if (fileset.src.length !== 1) {
                 grunt.log.error("Configured file set must contain just one directory: " + utils.inspect(fileset.src));
                 return false;
@@ -46,7 +47,7 @@ module.exports = function (grunt) {
                 return false;
             }
         });
-
+        
         grunt.verbose.writeln("Results: " + util.inspect(results));
 
         var errors = results
@@ -77,6 +78,7 @@ module.exports = function (grunt) {
         grunt.file.recurse(dir1, function (abspath, rootdir, subdir, filename) {
             dir1Files.push({
                 abspath: abspath,
+                rootdir: rootdir,
                 subdir: subdir,
                 filename: filename
             });
@@ -85,6 +87,7 @@ module.exports = function (grunt) {
         grunt.file.recurse(dir2, function (abspath, rootdir, subdir, filename) {
             dir2Files.push({
                 abspath: abspath,
+                rootdir: rootdir,
                 subdir: subdir,
                 filename: filename
             });
@@ -102,11 +105,12 @@ module.exports = function (grunt) {
             };
         }
 
+        // Compare files
         dir1Files.every(function (dir1File, idx) {
             var dir2File = dir2Files[idx];
             var dir1FileContent, dir2FileContent;
             
-            grunt.log.writeln("Comparing files: \r\n" +
+            grunt.verbose.writeln("Comparing files: \r\n" +
                 "    " + util.inspect(dir1File) + "\r\n" +
                 "    " + util.inspect(dir2File));
 

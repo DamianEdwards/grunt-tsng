@@ -12,6 +12,8 @@ module.exports = function (grunt) {
     var path = require("path");
     var util = require("util");
 
+    var newLine = (process.platform === "win32" ? "\r\n" : "\n");
+
     grunt.registerMultiTask("tsng", "Generate AngularJS registration blocks based on conventions and annotations in TypeScript files.", function () {
 
         // this.target is current target
@@ -187,191 +189,6 @@ module.exports = function (grunt) {
             return result;
         }
 
-        function emitModuleFile(module, dest, options) {
-            var filepath = "";
-            var content = "";
-            var srcLines;
-
-            if (module.file) {
-                //debugger;
-                // Module already has a file defined, just add the module registration
-                filepath = module.file.substr(0, module.file.length - 3) + options.extension;
-                srcLines = grunt.file.read(module.file).split("\r\n");
-
-                //grunt.log.writeln("module.declarationLine=" + module.declarationLine);
-
-                srcLines.forEach(function (line, i) {
-                    if (i === (module.declarationLine + 1)) {
-
-                        // Add the module registration
-                        content += "    angular.module(\"" + module.name + "\", [\r\n";
-
-                        if (module.dependencies && module.dependencies.length) {
-                            module.dependencies.forEach(function (d) {
-                                content += "        \"" + d + "\",\r\n";
-                            });
-                        }
-
-                        content += "    ])";
-
-                        ["config", "run"].forEach(function (method) {
-                            var fn = module[method + "Fn"];
-                            if (fn) {
-                                content += "." + method + "([\r\n";
-                                fn.dependencies.forEach(function (d) {
-                                    var name = d.name.substr(0, 1) === "$" ? d.name : d.type;
-                                    content += "        \"" + name + "\",\r\n";
-                                });
-                                content += "        " + fn.fnName + "\r\n    ])";
-                            }
-                        });
-
-                        content += ";\r\n\r\n";
-                    }
-
-                    content += line + "\r\n";
-                });
-            } else {
-                // We need to render a whole file
-                filepath = path.join(dest, module.name + options.extension);
-                content = "module " + module.name + " {\r\n";
-                content += "    angular.module(\"" + module.name + "\", []);\r\n";
-                content += "}";
-            }
-
-            grunt.file.write(filepath, content);
-            module.file = filepath;
-        }
-
-        function emitFile(file, services, options) {
-            var filepath;
-            var srcLines;
-            var content = "";
-            var module = file.module;
-            var serviceNames = services.map(function (service) {
-                return service.name;
-            });
-
-            filepath = file.path.substr(0, file.path.length - 3) + options.extension;
-            srcLines = grunt.file.read(file.path).split("\r\n");
-
-            srcLines.forEach(function (line, i) {
-                if (i === 0 && module.file) {
-                    // Add reference to module file
-                    // e.g. /// <reference path="../../MyModule.ng.ts" />
-
-                    content += "/// <reference path=\"" + path.relative(path.dirname(filepath), module.file) + "\" />\r\n\r\n";
-                }
-
-                if (i === file.closingBraceLine && module.file) {
-                    content += "    \r\n";
-                    content += "    angular.module(\"" + module.name + "\")";
-
-                    // Register controllers
-                    file.controllers.forEach(function (controller) {
-                        content += "\r\n";
-                        content += indent(2) + ".controller(\"" + controller.name + "\", [\r\n";
-
-                        if (controller.dependencies && controller.dependencies.length) {
-                            controller.dependencies.forEach(function (d) {
-                                var typeName;
-                                if (d.name.substr(0, 1) === "$") {
-                                    typeName = d.name;
-                                } else {
-                                    typeName = resolveTypeName(d.type, module.name, serviceNames);
-                                    if (!typeName) {
-                                        // Couldn't resolve type name
-                                        throw new Error("Error: Can't resolve dependency for controller " + controller.name + " with name " + d.type);
-                                    }
-                                }
-                                content += "            \"" + typeName + "\",\r\n";
-                            });
-                        }
-
-                        content += "            " + controller.fnName + "\r\n";
-                        content += "        ])";
-                    });
-
-                    // Register services
-                    file.services.forEach(function (service) {
-                        content += "\r\n";
-                        content += "        .service(\"" + service.name + "\", [\r\n";
-
-                        if (service.dependencies && service.dependencies.length) {
-                            service.dependencies.forEach(function (d) {
-                                var typeName;
-                                if (d.name.substr(0, 1) === "$") {
-                                    typeName = d.name;
-                                } else {
-                                    typeName = resolveTypeName(d.type, module.name, serviceNames);
-                                    if (!typeName) {
-                                        // Couldn't resolve type name
-                                        throw new Error("Error: Can't resolve dependency for service " + service.name + " with name " + d.type);
-                                    }
-                                }
-                                content += "            \"" + typeName + "\",\r\n";
-                            });
-                        }
-
-                        content += indent(3) + service.fnName + "\r\n";
-                        content += indent(2) + "])";
-                    });
-
-                    // Register directives
-                    file.directives.forEach(function (directive) {
-                        content += "\r\n";
-                        content += "       .directive(\"" + directive.name + "\", [\r\n";
-
-                        if (directive.dependencies && directive.dependencies.length) {
-                            directive.dependencies.forEach(function (d) {
-                                var typeName;
-                                if (d.name.substr(0, 1) === "$") {
-                                    typeName = d.name;
-                                } else {
-                                    typeName = resolveTypeName(d.type, module.name, serviceNames);
-                                    if (!typeName) {
-                                        // Couldn't resolve type name
-                                        throw new Error("Error: Can't resolve dependency for directive " + directive.name + " with name " + d.type);
-                                    }
-                                }
-                                content += "            \"" + typeName + "\",\r\n";
-                            });
-                        }
-
-                        var alphabet = "abcdefghijklmnopqrstuvwxyz";
-                        alphabet += alphabet.toUpperCase();
-
-                        var argList = directive.dependencies.map(function (d, index) {
-                            return alphabet.substr(index, 1);
-                        });
-
-                        content += "            function (";
-                        content += argList;
-                        content += ") {\r\n";
-                        content += "                return new " + directive.fnName + "(" + argList + ");\r\n";
-                        content += "            }\r\n";
-                        content += "        ])";
-                    });
-
-                    // Register filters
-                    file.filters.forEach(function (filter) {
-                        content += "\r\n";
-                        content += "        .filter(\"" + filter.name + "\", () => " + filter.fnName + ")";
-                    });
-
-                    content += ";\r\n";
-                }
-
-                content += line;
-
-                if (i < (srcLines.length - 1)) {
-                    content += "\r\n";
-                }
-            });
-
-            grunt.file.write(filepath, content);
-        }
-
         function processFile(filepath, dest, options) {
             var result = {
                 module: null,
@@ -412,7 +229,7 @@ module.exports = function (grunt) {
                 closingBrace: /^\s*}\s*$/
         };
             var content = grunt.file.read(filepath);
-            var lines = content.split("\r\n");
+            var lines = content.split(newLine);
             var module, line, matches, state, lastClosingBraceLine, error;
             var moduleFile;
             var expect = {
@@ -674,7 +491,7 @@ module.exports = function (grunt) {
 
                 if (expecting === expect.constructor) {
                     // Check for the constructor function
-                    matches = lines.join("\r\n").match(regex.constructor);
+                    matches = lines.join(newLine).match(regex.constructor);
                     //matches = line.match(regex.constructor);
                     if (matches) {
                         var args = [];
@@ -783,6 +600,191 @@ module.exports = function (grunt) {
             });
 
             return result;
+        }
+
+        function emitModuleFile(module, dest, options) {
+            var filepath = "";
+            var content = "";
+            var srcLines;
+
+            if (module.file) {
+                //debugger;
+                // Module already has a file defined, just add the module registration
+                filepath = module.file.substr(0, module.file.length - 3) + options.extension;
+                srcLines = grunt.file.read(module.file).split(newLine);
+
+                //grunt.log.writeln("module.declarationLine=" + module.declarationLine);
+
+                srcLines.forEach(function (line, i) {
+                    if (i === (module.declarationLine + 1)) {
+
+                        // Add the module registration
+                        content += indent() + "angular.module(\"" + module.name + "\", [" + newLine;
+
+                        if (module.dependencies && module.dependencies.length) {
+                            module.dependencies.forEach(function (d) {
+                                content += indent(2) + "\"" + d + "\"," + newLine;
+                            });
+                        }
+
+                        content += indent() + "])";
+
+                        ["config", "run"].forEach(function (method) {
+                            var fn = module[method + "Fn"];
+                            if (fn) {
+                                content += "." + method + "([" + newLine;
+                                fn.dependencies.forEach(function (d) {
+                                    var name = d.name.substr(0, 1) === "$" ? d.name : d.type;
+                                    content += indent(2) + "\"" + name + "\"," + newLine;
+                                });
+                                content += indent(2) + fn.fnName + newLine + indent() + "])";
+                            }
+                        });
+
+                        content += ";" + newLine + newLine;
+                    }
+
+                    content += line + newLine;
+                });
+            } else {
+                // We need to render a whole file
+                filepath = path.join(dest, module.name + options.extension);
+                content = "module " + module.name + " {" + newLine;
+                content += indent() + "angular.module(\"" + module.name + "\", []);" + newLine;
+                content += "}";
+            }
+
+            grunt.file.write(filepath, content);
+            module.file = filepath;
+        }
+
+        function emitFile(file, services, options) {
+            var filepath;
+            var srcLines;
+            var content = "";
+            var module = file.module;
+            var serviceNames = services.map(function (service) {
+                return service.name;
+            });
+
+            filepath = file.path.substr(0, file.path.length - 3) + options.extension;
+            srcLines = grunt.file.read(file.path).split(newLine);
+
+            srcLines.forEach(function (line, i) {
+                if (i === 0 && module.file) {
+                    // Add reference to module file
+                    // e.g. /// <reference path="../../MyModule.ng.ts" />
+
+                    content += "/// <reference path=\"" + path.relative(path.dirname(filepath), module.file) + "\" />" + newLine + newLine;
+                }
+
+                if (i === file.closingBraceLine && module.file) {
+                    content += indent() + newLine;
+                    content += indent() + "angular.module(\"" + module.name + "\")";
+
+                    // Register controllers
+                    file.controllers.forEach(function (controller) {
+                        content += newLine;
+                        content += indent(2) + ".controller(\"" + controller.name + "\", [" + newLine;
+
+                        if (controller.dependencies && controller.dependencies.length) {
+                            controller.dependencies.forEach(function (d) {
+                                var typeName;
+                                if (d.name.substr(0, 1) === "$") {
+                                    typeName = d.name;
+                                } else {
+                                    typeName = resolveTypeName(d.type, module.name, serviceNames);
+                                    if (!typeName) {
+                                        // Couldn't resolve type name
+                                        throw new Error("Error: Can't resolve dependency for controller " + controller.name + " with name " + d.type);
+                                    }
+                                }
+                                content += indent(3) + "\"" + typeName + "\"," + newLine;
+                            });
+                        }
+
+                        content += indent(3) + controller.fnName + newLine;
+                        content += indent(2) + "])";
+                    });
+
+                    // Register services
+                    file.services.forEach(function (service) {
+                        content += newLine;
+                        content += indent(2) + ".service(\"" + service.name + "\", [" + newLine;
+
+                        if (service.dependencies && service.dependencies.length) {
+                            service.dependencies.forEach(function (d) {
+                                var typeName;
+                                if (d.name.substr(0, 1) === "$") {
+                                    typeName = d.name;
+                                } else {
+                                    typeName = resolveTypeName(d.type, module.name, serviceNames);
+                                    if (!typeName) {
+                                        // Couldn't resolve type name
+                                        throw new Error("Error: Can't resolve dependency for service " + service.name + " with name " + d.type);
+                                    }
+                                }
+                                content += indent(3) + "\"" + typeName + "\"," + newLine;
+                            });
+                        }
+
+                        content += indent(3) + service.fnName + newLine;
+                        content += indent(2) + "])";
+                    });
+
+                    // Register directives
+                    file.directives.forEach(function (directive) {
+                        content += newLine;
+                        content += indent(2) + ".directive(\"" + directive.name + "\", [" + newLine;
+
+                        if (directive.dependencies && directive.dependencies.length) {
+                            directive.dependencies.forEach(function (d) {
+                                var typeName;
+                                if (d.name.substr(0, 1) === "$") {
+                                    typeName = d.name;
+                                } else {
+                                    typeName = resolveTypeName(d.type, module.name, serviceNames);
+                                    if (!typeName) {
+                                        // Couldn't resolve type name
+                                        throw new Error("Error: Can't resolve dependency for directive " + directive.name + " with name " + d.type);
+                                    }
+                                }
+                                content += indent(3) + "\"" + typeName + "\"," + newLine;
+                            });
+                        }
+
+                        var alphabet = "abcdefghijklmnopqrstuvwxyz";
+                        alphabet += alphabet.toUpperCase();
+
+                        var argList = directive.dependencies.map(function (d, index) {
+                            return alphabet.substr(index, 1);
+                        });
+
+                        content += indent(3) + "function (";
+                        content += argList;
+                        content += ") {" + newLine;
+                        content += indent(4) + "return new " + directive.fnName + "(" + argList + ");" + newLine;
+                        content += indent(3) + "}" + newLine;
+                        content += indent(2) + "])";
+                    });
+
+                    // Register filters
+                    file.filters.forEach(function (filter) {
+                        content += newLine;
+                        content += indent(2) + ".filter(\"" + filter.name + "\", () => " + filter.fnName + ")";
+                    });
+
+                    content += ";" + newLine;
+                }
+
+                content += line;
+
+                if (i < (srcLines.length - 1)) {
+                    content += newLine;
+                }
+            });
+
+            grunt.file.write(filepath, content);
         }
 
         function mergeModules(fileResult, modules) {
@@ -898,6 +900,7 @@ module.exports = function (grunt) {
         }
 
         function indent(length, char) {
+            length = length || 1; // Default to 1 level of indent
             char = char || "    "; // Default to 4 spaces
             var result = "";
             for (var i = 0; i < length; i++) {
