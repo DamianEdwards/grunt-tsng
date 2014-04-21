@@ -133,6 +133,7 @@ module.exports = function (grunt) {
             var files = {};
             var error;
             var dest = path.resolve(fileSet.dest);
+            var moduleName;
 
             grunt.verbose.writeln("dest file path: " + dest);
 
@@ -165,12 +166,21 @@ module.exports = function (grunt) {
             }
 
             // Emit module files
-            for (var moduleName in modules) {
+            var moduleNames = [];
+            for (moduleName in modules) {
+                if (!modules.hasOwnProperty(moduleName)) {
+                    continue;
+                }
+
+                moduleNames.push(modules[moduleName].name);
+            }
+
+            for (moduleName in modules) {
                 if (!modules.hasOwnProperty(moduleName)) {
                     continue;
                 }
                 
-                emitModuleFile(modules[moduleName], dest, options);
+                emitModuleFile(modules[moduleName], dest, moduleNames, options);
 
                 if (!modules[moduleName].file) {
                     throw new Error("Module " + moduleName + " doesn't have a file");
@@ -602,7 +612,7 @@ module.exports = function (grunt) {
             return result;
         }
 
-        function emitModuleFile(module, dest, options) {
+        function emitModuleFile(module, dest, moduleNames, options) {
             var filepath = "";
             var content = "";
             var srcLines;
@@ -623,7 +633,8 @@ module.exports = function (grunt) {
 
                         if (module.dependencies && module.dependencies.length) {
                             module.dependencies.forEach(function (d) {
-                                content += indent(2) + "\"" + d + "\"," + newLine;
+                                var resolvedDependencyName = resolveTypeName(d, module.name, moduleNames);
+                                content += indent(2) + "\"" + (resolvedDependencyName || d) + "\"," + newLine;
                             });
                         }
 
@@ -644,7 +655,11 @@ module.exports = function (grunt) {
                         content += ";" + newLine + newLine;
                     }
 
-                    content += line + newLine;
+                    content += line;
+
+                    if (i < (srcLines.length - 1)) {
+                        content += newLine;
+                    }
                 });
             } else {
                 // We need to render a whole file
@@ -831,12 +846,13 @@ module.exports = function (grunt) {
             /// <param name="allNames" type="Array" elementType="String" />
 
             //debugger;
+            //grunt.log.writeln(util.inspect({ name: name, moduleName: moduleName, allNames: allNames }));
 
             var prefix, matchedIndex;
             var parts = moduleName.split(".");
 
             if (parts.length === 1) {
-                matchedIndex = allNames.indexOf(moduleName);
+                matchedIndex = allNames.indexOf(moduleName + "." + name);
                 if (matchedIndex >= 0) {
                     return allNames[matchedIndex];
                 }
