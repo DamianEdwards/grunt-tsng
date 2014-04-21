@@ -46,6 +46,8 @@ module.exports = function (grunt) {
             if (result.error) {
                 return false;
             }
+
+            return true;
         });
         
         grunt.verbose.writeln("Results: " + util.inspect(results));

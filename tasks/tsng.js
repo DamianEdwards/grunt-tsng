@@ -227,7 +227,7 @@ module.exports = function (grunt) {
                 constructor: /constructor\s*\(\s*([^(]*)\s*\)\s*{/,
 
                 closingBrace: /^\s*}\s*$/
-        };
+            };
             var content = grunt.file.read(filepath);
             var lines = content.split(newLine);
             var module, line, matches, state, lastClosingBraceLine, error;
