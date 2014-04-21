@@ -90,5 +90,5 @@ module.exports = function(grunt) {
 
     grunt.registerTask("test", ["clean:test", "copy:test", "tsng:test", "compare:test"]);
 
-    grunt.registerTask("default", ["jshint"]);
+    grunt.registerTask("default", ["jshint", "test"]);
 };
