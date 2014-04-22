@@ -1,8 +1,8 @@
 {
   "name": "grunt-tsng",
   "version": "0.1.0",
-  "description": "A Grunt plugin that makes AngularJS + TypeScript a joy",
-  "main": "grunt-tsng.js",
+  "description": "A TypeScript pre-processor for AngularJS",
+  "main": "tsng.js",
   "author": {
     "name": "Damian Edwards",
     "url": "https://github.com/DamianEdwards/"
