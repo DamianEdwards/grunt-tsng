@@ -86,6 +86,7 @@ Grunt-tsng uses a number of conventions & comment annotations to discover the pa
 Grunt-tsng works best when the following conventions are followed:
 - Each item you're creating is in its own file, i.e. one controller per file, one directive per file, etc.
 - You use TypeScript constructs for organizing and building your app, e.g. put modules, use classes and interfaces to define your items.
+- You compile your TypeScript to a single file per AngularJS app.
 - You keep the TypeScript items internal to the modules they're defined in (don't export them). Interfaces for your services and models however should be exported so you can use them from other parts of your app.
 - You use the [controller as](http://www.thinkster.io/angularjs/GmI3KetKo6/angularjs-experimental-controller-as-syntax) syntax for binding views to controllers.
 
