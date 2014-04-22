@@ -34,7 +34,10 @@
     "grunt-contrib-copy": "~0.5.0"
   },
   "keywords": [
-    "gruntplugin typescript angular angularjs"
+    "gruntplugin",
+    "typescript",
+    "angular",
+    "angularjs"
   ],
   "files": [
     "tasks",
