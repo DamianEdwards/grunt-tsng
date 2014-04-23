@@ -500,9 +500,8 @@ module.exports = function (grunt) {
                 }
 
                 if (expecting === expect.constructor) {
-                    // Check for the constructor function
+                    // Check for the constructor function in entire file
                     matches = lines.join(newLine).match(regex.constructor);
-                    //matches = line.match(regex.constructor);
                     if (matches) {
                         var args = [];
                         if (matches[1]) {
@@ -543,6 +542,39 @@ module.exports = function (grunt) {
             result.module = module;
 
             return result;
+        }
+
+        function parseConstructor(fileContents) {
+            // Extract details from constructor function
+            // constructor($window: ng.IWindowService) {
+            var regex = /constructor\s*\(\s*([^(]*)\s*\)\s*{/;
+            var matches = fileContents.match(regex);
+            
+            if (matches) {
+                var result = {};
+                result.args = [];
+                if (matches[1]) {
+                    matches[1].split(",").forEach(function (arg) {
+                        var argParts = arg.split(":");
+                        var a = { name: argParts[0].trim() };
+                        if (argParts.length > 1) {
+                            a.type = argParts[1].trim();
+                        }
+                        result.args.push(a);
+                    });
+                }
+
+                // Find line numbers where the constructor function starts/ends
+                var startIndex = fileContents.indexOf(matches[0]);
+                var endIndex = startIndex + matches[0].length;
+
+                var linesBefore = fileContents.substr(0, matches[0].length);
+
+                return result;
+            }
+
+            // No constructor found
+            return null;
         }
 
         function parseModuleFile(filepath) {
