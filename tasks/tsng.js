@@ -249,8 +249,7 @@ module.exports = function (grunt) {
                 serviceDeclaration: 4,
                 directiveComment: 8,
                 directiveDeclaration: 16,
-                filterDeclaration: 32,
-                constructor: 64
+                filterDeclaration: 32
             };
             var expecting = expect.anything;
 
@@ -306,19 +305,19 @@ module.exports = function (grunt) {
                         (function () {
                             var fnName = matches[1];
                             var name = (module ? module.name + "." : "") + fnName;
-                            state = {
-                                push: function (d, s) {
-                                    result.controllers.push({
-                                        module: module,
-                                        name: name,
-                                        fnName: fnName,
-                                        dependencies: d,
-                                        file: filepath
-                                    });
-                                }
-                            };
+                            var ctor = parseConstructor(content) || { args: [] };
+                            
+                            result.controllers.push({
+                                module: module,
+                                name: name,
+                                fnName: fnName,
+                                dependencies: ctor.args,
+                                file: filepath,
+                                ctorStartLine: ctor.startLine,
+                                ctorEndLine: ctor.endLine
+                            });
                         }());
-                        expecting = expect.constructor;
+                        expecting = expect.anything;
                         continue;
                     }
 
@@ -337,19 +336,19 @@ module.exports = function (grunt) {
                             var className = matches[1];
                             var interfaceName = matches[2];
                             var name = (module ? module.name + "." : "") + (interfaceName || className);
-                            state = {
-                                push: function (d, s) {
-                                    result.services.push({
-                                        module: module,
-                                        name: name,
-                                        fnName: className,
-                                        dependencies: d,
-                                        file: filepath
-                                    });
-                                }
-                            };
+                            var ctor = parseConstructor(content) || { args: [] };
+
+                            result.services.push({
+                                module: module,
+                                name: name,
+                                fnName: className,
+                                dependencies: ctor.args,
+                                file: filepath,
+                                ctorStartLine: ctor.startLine,
+                                ctorEndLine: ctor.endLine
+                            });
                         }());
-                        expecting = expect.constructor;
+                        expecting = expect.anything;
                         continue;
                     }
 
@@ -401,22 +400,25 @@ module.exports = function (grunt) {
                         expecting = expect.anything;
                         continue;
                     }
+
                     // Check for controller declaration
                     matches = line.match(regex.controllerDeclaration);
                     if (matches) {
                         (function () {
                             var name = (module ? module.name + "." : "") + (state[1] || matches[1]);
-                            state.push = function (d, s) {
-                                result.controllers.push({
-                                    module: module,
-                                    name: name,
-                                    fnName: matches[1],
-                                    dependencies: d,
-                                    file: filepath
-                                });
-                            };
+                            var ctor = parseConstructor(content) || { args: [] };
+                            
+                            result.controllers.push({
+                                module: module,
+                                name: name,
+                                fnName: matches[1],
+                                dependencies: ctor.args,
+                                file: filepath,
+                                startLine: ctor.startLine,
+                                endLine: ctor.endLine
+                            });
                         }());
-                        expecting = expect.constructor;
+                        expecting = expect.anything;
                         continue;
                     } else {
                         // A controller comment was found but the next line wasn't a controller declaration
@@ -433,19 +435,19 @@ module.exports = function (grunt) {
                             var className = matches[1];
                             var interfaceName = matches[2];
                             var name = (module ? module.name + "." : "") + ((state ? state[1] : null) || interfaceName || className);
-                            state = {
-                                push: function (d, s) {
-                                    result.services.push({
-                                        module: module,
-                                        name: name,
-                                        fnName: className,
-                                        dependencies: d,
-                                        file: filepath
-                                    });
-                                }
-                            };
+                            var ctor = parseConstructor(content) || { args: [] };
+
+                            result.services.push({
+                                module: module,
+                                name: name,
+                                fnName: className,
+                                dependencies: ctor.args,
+                                file: filepath,
+                                ctorStartLine: ctor.startLine,
+                                ctorEndLine: ctor.endLine
+                            });
                         }());
-                        expecting = expect.constructor;
+                        expecting = expect.anything;
                         continue;
                     }
                 }
@@ -466,19 +468,22 @@ module.exports = function (grunt) {
                     if (matches) {
                         (function () {
                             var fnName = matches[1];
-                            state.push = function (d, s) {
-                                s.names.forEach(function (name) {
-                                    result.directives.push({
-                                        module: module,
-                                        name: name,
-                                        fnName: fnName,
-                                        dependencies: d,
-                                        file: filepath
-                                    });
+                            var ctor = parseConstructor(content) || { args: [] };
+
+                            state.names.forEach(function (name) {
+                                result.directives.push({
+                                    module: module,
+                                    file: filepath,
+                                    name: name,
+                                    fnName: fnName,
+                                    classLine: i,
+                                    ctorStartLine: ctor.startLine,
+                                    ctorEndLine: ctor.endLine,
+                                    dependencies: ctor.args
                                 });
-                            };
+                            });
                         }());
-                        expecting = expect.constructor;
+                        expecting = expect.anything;
                         continue;
                     }
                 }
@@ -498,39 +503,11 @@ module.exports = function (grunt) {
                         continue;
                     }
                 }
-
-                if (expecting === expect.constructor) {
-                    // Check for the constructor function
-                    matches = lines.join(newLine).match(regex.constructor);
-                    //matches = line.match(regex.constructor);
-                    if (matches) {
-                        var args = [];
-                        if (matches[1]) {
-                            matches[1].split(",").forEach(function (arg) {
-                                var argParts = arg.split(":");
-                                var a = { name: argParts[0].trim() };
-                                if (argParts.length > 1) {
-                                    a.type = argParts[1].trim();
-                                }
-                                args.push(a);
-                            });
-                        }
-                        state.push(args, state);
-                        state = null;
-                        expecting = expect.anything;
-                        continue;
-                    }
-                }
             }
 
             // EOF
             if (expecting !== expect.anything) {
-                if (expecting === expect.constructor) {
-                    // No constructor found so just push with zero dependencies
-                    state.push([], state);
-                } else {
-                    error = "Error: End of file " + filepath + " reached while expecting " + expecting;
-                }
+                error = "Error: End of file " + filepath + " reached while expecting " + expecting;
             }
 
             if (error) {
@@ -543,6 +520,40 @@ module.exports = function (grunt) {
             result.module = module;
 
             return result;
+        }
+
+        function parseConstructor(fileContents) {
+            // Extract details from constructor function
+            // constructor($window: ng.IWindowService) {
+            var regex = /constructor\s*\(\s*([^(]*)\s*\)\s*{/;
+            var matches = fileContents.match(regex);
+            var result = {};
+
+            if (matches) {
+                result.args = [];
+                if (matches[1]) {
+                    matches[1].split(",").forEach(function (arg) {
+                        var argParts = arg.split(":");
+                        var a = { name: argParts[0].trim() };
+                        if (argParts.length > 1) {
+                            a.type = argParts[1].trim();
+                        }
+                        result.args.push(a);
+                    });
+                }
+
+                // Find line numbers where the constructor function starts/ends
+                var startIndex = fileContents.indexOf(matches[0]);
+                var endIndex = startIndex + matches[0].length;
+
+                result.startLine = fileContents.substr(0, startIndex).split(newLine).length - 1;
+                result.endLine = fileContents.substr(0, endIndex).split(newLine).length - 1;
+
+                return result;
+            }
+
+            // No constructor found
+            return null;
         }
 
         function parseModuleFile(filepath) {
@@ -685,12 +696,40 @@ module.exports = function (grunt) {
             filepath = file.path.substr(0, file.path.length - 3) + options.extension;
             srcLines = grunt.file.read(file.path).split(newLine);
 
+            var emitCtor = false;
+            if (file.directives.length && !file.directives[0].ctorStartLine) {
+                emitCtor = true;
+            }
+
             srcLines.forEach(function (line, i) {
                 if (i === 0 && module.file) {
                     // Add reference to module file
                     // e.g. /// <reference path="../../MyModule.ng.ts" />
 
                     content += "/// <reference path=\"" + path.relative(path.dirname(filepath), module.file) + "\" />" + newLine + newLine;
+                }
+
+                var emitBind = file.directives.length ?
+                    file.directives[0].ctorEndLine ?
+                        (file.directives[0].ctorEndLine + 1) === i // Line after the ctor declartion ends
+                        : (file.directives[0].classLine + 1) === i // No ctor already, so line after the class declaration
+                    : false;
+
+                if (emitBind) {
+                    if (emitCtor) {
+                        // Need to generate a ctor
+                        content += indent(2) + "constructor() {" + newLine;
+                    }
+                    // Emit function to bind instance methods to 'this'
+                    content += indent(3) + "for (var m in this) {" + newLine;
+                    content += indent(4) + "if (this[m].bind) {" + newLine;
+                    content += indent(5) + "this[m] = this[m].bind(this);" + newLine;
+                    content += indent(4) + "}" + newLine;
+                    content += indent(3) + "}" + newLine;
+                    if (emitCtor) {
+                        // Need to generate a ctor
+                        content += indent(2) + "}" + newLine + newLine;
+                    }
                 }
 
                 if (i === file.closingBraceLine && module.file) {

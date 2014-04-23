@@ -6,9 +6,12 @@ module MyApp.Area {
         private _aService: Area.IAService;
 
         constructor(aService: Area.IAService) {
+            for (var m in this) {
+                if (this[m].bind) {
+                    this[m] = this[m].bind(this);
+                }
+            }
             this._aService = aService;
-
-            this.link = this.link.bind(this);
         }
 
         public restrict = "A";

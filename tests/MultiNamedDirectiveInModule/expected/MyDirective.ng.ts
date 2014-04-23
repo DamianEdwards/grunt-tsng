@@ -5,7 +5,11 @@ module MyApp.Area {
     //@NgDirective('bar')
     class MyDirective implements ng.IDirective {
         constructor() {
-            this.link = this.link.bind(this);
+            for (var m in this) {
+                if (this[m].bind) {
+                    this[m] = this[m].bind(this);
+                }
+            }
         }
 
         public restrict = "A";

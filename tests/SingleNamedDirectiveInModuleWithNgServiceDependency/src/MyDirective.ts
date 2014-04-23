@@ -5,8 +5,6 @@ module MyApp.Area {
 
         constructor($window: ng.IWindowService) {
             this._window = $window;
-
-            this.link = this.link.bind(this);
         }
 
         public restrict = "A";
