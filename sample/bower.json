@@ -1,0 +1,23 @@
+{
+  "name": "sample",
+  "version": "0.1.2",
+  "homepage": "https://github.com/DamianEdwards/grunt-tsng",
+  "authors": [
+    "DamianEdwards <damian@damianedwards.com>"
+  ],
+  "license": "Apache 2.0",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+    "angular": "~1.2.16",
+    "dt-angular": "~1.2.15",
+    "dt-jquery": "~2.0.0",
+    "angular-route": "~1.2.16"
+  }
+}

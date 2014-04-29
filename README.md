@@ -81,6 +81,16 @@ grunt.initConfig({
 
 ### Supported conventions & annotations
 
+Take a look at the [sample](https://github.com/DamianEdwards/grunt-tsng/tree/master/sample) for samples of usage.
+
+To run the sample locally:
+- Open a command prompt
+- Clone this repo
+- Change to the sample directory
+- Run `npm install`
+- Run `bower install`
+- Run `grunt sample`
+
 Grunt-tsng uses a number of conventions & comment annotations to discover the parts of your app you want to register with AngularJS. Comment annotations are simply a TS line comment followed by @ and the annotation name and any arguments in a method call fashion, e.g. `//@NgFilter('truncate')`
 
 Grunt-tsng works best when the following conventions are followed:
@@ -89,8 +99,6 @@ Grunt-tsng works best when the following conventions are followed:
 - You compile your TypeScript to a single file per AngularJS app.
 - You keep the TypeScript items internal to the modules they're defined in (don't export them). Interfaces for your services and models however should be exported so you can use them from other parts of your app.
 - You use the [controller as](http://www.thinkster.io/angularjs/GmI3KetKo6/angularjs-experimental-controller-as-syntax) syntax for binding views to controllers.
-
-Take a look at the [tests](https://github.com/DamianEdwards/grunt-tsng/tree/master/tests) for samples of usage.
 
 #### Modules
 TypeScript modules are tracked and mapped one-to-one with Angular modules. Each TypeScript module you declare will end up as an AngularJS module. To declare a module with dependencies, a config and/or run method, simply put the module in its own file with a `dependencies` array variable, configuration method and/or run method, e.g.:

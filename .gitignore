@@ -9,8 +9,11 @@ bower_components
 # Node Modules
 node_modules
 
-# Public files
-[Pp]ublic
+# js sample files
+sample/js
 
 # Test output
 tests/*/actual
+
+# Processed files
+*.ng.ts
