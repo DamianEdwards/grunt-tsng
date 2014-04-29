@@ -20,6 +20,13 @@ module.exports = function(grunt) {
                 }
             }
         },
+        copy: { // This is to work around an issue with the dt-angular bower package https://github.com/dt-bower/dt-angular/issues/4
+            fix: {
+                files: {
+                    "bower_components/jquery/jquery.d.ts": ["bower_components/dt-jquery/jquery.d.ts"]
+                }
+            }
+        },
         clean: {
             options: { force: true },
             tsng: ['app/**/*.ng.ts'],
@@ -59,12 +66,13 @@ module.exports = function(grunt) {
 
     grunt.loadTasks("../tasks");
 
+    grunt.loadNpmTasks("grunt-contrib-copy");
     grunt.loadNpmTasks("grunt-contrib-clean");
     grunt.loadNpmTasks("grunt-contrib-connect");
     grunt.loadNpmTasks("grunt-tslint");
     grunt.loadNpmTasks("grunt-typescript");
 
-    grunt.registerTask("sample", ["build", "connect"]);
+    grunt.registerTask("sample", ["copy:fix", "build", "connect"]);
     grunt.registerTask("build", ["clean", "tslint", "tsng", "typescript"]);
     grunt.registerTask("default", ["build"]);
 };

@@ -16,8 +16,7 @@
   ],
   "devDependencies": {
     "angular": "~1.2.16",
-    "dt-angular": "~1.2.15",
-    "dt-jquery": "~2.0.0",
+    "dt-angular": "~1.2.0",
     "angular-route": "~1.2.16"
   }
 }
