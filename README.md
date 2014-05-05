@@ -1,4 +1,4 @@
-# grunt-tsng v0.1.2
+# grunt-tsng v0.1.3
 
 > A TypeScript pre-processor for AngularJS.
 

@@ -134,6 +134,7 @@ module.exports = function (grunt) {
             var error;
             var dest = path.resolve(fileSet.dest);
             var moduleName;
+            var serviceNames;
 
             grunt.verbose.writeln("dest file path: " + dest);
 
@@ -165,6 +166,10 @@ module.exports = function (grunt) {
                 return { error: error };
             }
 
+            serviceNames = result.services.map(function (service) {
+                return service.name;
+            });
+
             // Emit module files
             var moduleNames = [];
             for (moduleName in modules) {
@@ -180,7 +185,7 @@ module.exports = function (grunt) {
                     continue;
                 }
                 
-                emitModuleFile(modules[moduleName], dest, moduleNames, options);
+                emitModuleFile(modules[moduleName], dest, moduleNames, serviceNames, options);
 
                 if (!modules[moduleName].file) {
                     throw new Error("Module " + moduleName + " doesn't have a file");
@@ -193,7 +198,7 @@ module.exports = function (grunt) {
                     continue;
                 }
 
-                emitFile(files[filepath], result.services, options);
+                emitFile(files[filepath], serviceNames, options);
             }
 
             return result;
@@ -623,7 +628,7 @@ module.exports = function (grunt) {
             return result;
         }
 
-        function emitModuleFile(module, dest, moduleNames, options) {
+        function emitModuleFile(module, dest, moduleNames, serviceNames, options) {
             var filepath = "";
             var content = "";
             var srcLines;
@@ -656,8 +661,17 @@ module.exports = function (grunt) {
                             if (fn) {
                                 content += "." + method + "([" + newLine;
                                 fn.dependencies.forEach(function (d) {
-                                    var name = d.name.substr(0, 1) === "$" ? d.name : d.type;
-                                    content += indent(2) + "\"" + name + "\"," + newLine;
+                                    var typeName;
+                                    if (d.name.substr(0, 1) === "$") {
+                                        typeName = d.name;
+                                    } else {
+                                        typeName = resolveTypeName(d.type, module.name, serviceNames);
+                                        if (!typeName) {
+                                            // Couldn't resolve type name
+                                            throw new Error("Error: Can't resolve dependency for module function " + module.name + "." + method + " with name " + d.type);
+                                        }
+                                    }
+                                    content += indent(2) + "\"" + typeName + "\"," + newLine;
                                 });
                                 content += indent(2) + fn.fnName + newLine + indent() + "])";
                             }
@@ -684,14 +698,11 @@ module.exports = function (grunt) {
             module.file = filepath;
         }
 
-        function emitFile(file, services, options) {
+        function emitFile(file, serviceNames, options) {
             var filepath;
             var srcLines;
             var content = "";
             var module = file.module;
-            var serviceNames = services.map(function (service) {
-                return service.name;
-            });
 
             filepath = file.path.substr(0, file.path.length - 3) + options.extension;
             srcLines = grunt.file.read(file.path).split(newLine);
